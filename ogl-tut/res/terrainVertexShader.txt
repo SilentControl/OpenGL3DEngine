@@ -1,0 +1,50 @@
+#version 430
+
+in vec3 position;
+in vec2 texCoord;
+in vec3 normal;
+
+out vec2 texCoord0;
+out vec3 surfaceNormal;
+out vec3 toLightVector;
+out vec3 toCameraVector;
+
+uniform mat4 transformationMatrix;
+uniform mat4 projectionMatrix;
+uniform mat4 viewMatrix;
+uniform vec3 lightPosition;
+
+out vec4 world_pos;
+out vec3 world_normal;
+
+uniform float fakeLight;
+
+out float visibility;
+
+void main()
+{
+
+	// fog
+	float density = 0.0035;
+	float gradient = 5.0;
+
+	world_pos = transformationMatrix * vec4(position,1);
+	world_normal = normalize( mat3(transformationMatrix) * normal);
+
+	vec4 worldPosition = transformationMatrix * vec4(position, 1.0);
+	vec4 posToCamera = viewMatrix * worldPosition;
+	gl_Position = projectionMatrix * viewMatrix * worldPosition;
+	texCoord0 = texCoord;
+
+	//surfaceNormal = (transformationMatrix * vec4(normal, 1.0)).xyz;
+	surfaceNormal = world_normal;
+	toLightVector = lightPosition - worldPosition.xyz;
+
+	toCameraVector = (inverse(viewMatrix) * vec4(0.0, 0.0, 0.0, 1.0)).xyz - worldPosition.xyz;
+
+	float distance = length(posToCamera.xyz);
+
+	// fog
+	visibility = exp(-pow((distance*density), gradient));
+	visibility = clamp(visibility, 0.0, 1.0);
+}
